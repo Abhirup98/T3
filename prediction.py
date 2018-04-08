@@ -7,22 +7,26 @@ Created on Fri Apr  6 17:57:12 2018
 import pandas as pd
 import numpy as np
 from  math import sqrt
+print('Loading data...',end = ' ')
 filename = 'TrainingRatings.txt'
 df = pd.read_csv(filename,header=None)
 df.columns = ['MovieID','UserID','Rating']
-print('Data loaded')
+print('[done]')
+
+print('Organizing data...',end = ' ')
 data_by_UserID = df.groupby('UserID')
 data_by_MovieID = df.groupby('MovieID')
-print('Data organized')
+print('[done]')
 
+
+print('Computing means for each user...',end = ' ')
 mean_vote = df[['UserID','Rating']].groupby('UserID').mean()
-
 list_of_UserID = mean_vote.index.values
+print('[done]')
 
-print('means computed')
+print('Allocating matrix w...',end = ' ')
 global_w = pd.DataFrame(index = list_of_UserID, columns = list_of_UserID)
-
-print ('Matrix w created')
+print('[done]')
 
 def update_w_for(a,selected_movie):
     global global_w
@@ -44,11 +48,11 @@ def update_w_for(a,selected_movie):
             
             common_movies = votes_of_a.index.intersection(votes_of_i.index)
             #Here we start the computation:
-            if len(common_movies)> 0:            
-                sum_lin = 0
-                sum_sqr_a = 0
-                sum_sqr_i = 0
-                
+            if len(common_movies)> 0:  
+                sum_lin = ((votes_of_a.loc[common_movies] - mean_a).mul(votes_of_i.loc[common_movies] - mean_user)).sum()['Rating']
+                sum_sqr_a = ((votes_of_a.loc[common_movies] - mean_a)**2).sum()['Rating']
+                sum_sqr_i = ((votes_of_i.loc[common_movies] - mean_user)**2).sum()['Rating']
+                """                
                 for movie in common_movies:
                     d_a =(votes_of_a.loc[movie,'Rating'] - mean_a)
                     d_i =(votes_of_i.loc[movie,'Rating'] - mean_user)
@@ -56,6 +60,7 @@ def update_w_for(a,selected_movie):
                     sum_lin += d_a * d_i
                     sum_sqr_a += d_a**2
                     sum_sqr_i += d_i**2
+                """
                 #Potential divisionby 0 problem
                 if (sum_lin != 0):
                     #print('Calculating w for a and i :',a,' ',user)
@@ -68,7 +73,7 @@ def update_w_for(a,selected_movie):
                 w_value_ai = 0
             global_w.loc[a,user] = w_value_ai 
             global_w.loc[user,a] = w_value_ai
-            print('w for ',a,'and',user,': ',global_w.loc[a,user])
+            #print('w for ',a,'and',user,': ',global_w.loc[a,user])
     #This is the end of the function,
     #It only updates w values
 
@@ -85,8 +90,4 @@ def predicted_vote(a,selected_movie):
         sum_w_times_v += global_w.loc[user,a] * (votes_for_movie.loc[user,'Rating'] - mean_vote.loc[user,'Rating'] )
     kappa = 1/sum_weights
     return mean_vote.loc[user,'Rating'] + kappa * sum_w_times_v
-
-predicted_vote(553787,8)
-
-    
 
