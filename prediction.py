@@ -5,7 +5,7 @@ Created on Fri Apr  1 17:57:12 2018
 @author: LUCIA
 """
 
-"""
+
 #For Python 2 / 3 compatibility
 from __future__ import print_function
 
@@ -35,12 +35,12 @@ mean_vote = df[['UserID','Rating']].groupby('UserID').mean()
 list_of_UserID = mean_vote.index.values
 print('[done]')
 
-print('Allocating matrix w\n\t This operation might last serveral minutes...',end = ' ')
+print('Allocating matrix w\n\t This operation can take serveral minutes...',end = ' ')
 global_w = pd.DataFrame(index = list_of_UserID, columns = list_of_UserID)
 print('[done]')
 
 
-"""
+
 
 def update_w_for(a,selected_movie):
     global global_w
@@ -101,35 +101,12 @@ def predicted_vote(a,selected_movie):
 
     #extract the column of the user a with the filter of  usersID_for_movie (indexes)
 
-
-    subset = (global_w[[a]]).loc[usersID_for_movie]
-    #print('The subset is:\n',subset)
-    sum_weights = (subset.abs().sum()).loc[a]
-    
-    sum_w_times_v = 0
-    for user in usersID_for_movie:
-        sum_w_times_v += global_w.loc[user,a] * (votes_for_movie.loc[user,'Rating'] - mean_vote.loc[user,'Rating'] )
-
-
-    """
-    subset = (global_w[[a]]).loc[usersID_for_movie].rename(columns={"Rating": "factor"})
-    print('The subset is:\n',subset)
-    sum_weights = (subset.abs().sum()).loc[a]
-    print('sum_weights:\n',sum_weights)
-    print('Testing point 1:\n', votes_for_movie.sub(mean_vote.loc[usersID_for_movie]))
-    print('Testing point 2:\n', subset.mul(votes_for_movie.sub(mean_vote.loc[usersID_for_movie])))
-    sum_w_times_v = (subset.mul((votes_for_movie.sub(mean_vote.loc[usersID_for_movie])).rename(columns={"Rating": "factor"}))).sum()
-    print('The sum_w_times_v is:\n',sum_w_times_v)
-    """
-    
-    
-    """
     sum_weights = 0
     sum_w_times_v = 0
     for user in usersID_for_movie:
         sum_weights += abs(global_w.loc[user,a])
         sum_w_times_v += global_w.loc[user,a] * (votes_for_movie.loc[user,'Rating'] - mean_vote.loc[user,'Rating'] )
-    """
+
 
     if (sum_weights != 0):
         kappa = 1/sum_weights
