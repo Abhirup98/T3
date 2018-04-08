@@ -1,16 +1,27 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Apr  6 17:57:12 2018
+Created on Fri Apr  1 17:57:12 2018
 
 @author: LUCIA
 """
+
+"""
+#For Python 2 / 3 compatibility
+from __future__ import print_function
+
 import pandas as pd
 import numpy as np
 from  math import sqrt
+
 print('Loading data...',end = ' ')
-filename = 'TrainingRatings.txt'
-df = pd.read_csv(filename,header=None)
+training_filename = 'TrainingRatings.txt'
+df = pd.read_csv(training_filename,header=None)
 df.columns = ['MovieID','UserID','Rating']
+
+testing_filename = 'TestingRatings.txt'
+testing_data= pd.read_csv(testing_filename,header=None)
+testing_data.columns = ['MovieID','UserID','Rating']
+testing_data['Prediction'] = np.nan
 print('[done]')
 
 print('Organizing data...',end = ' ')
@@ -24,9 +35,12 @@ mean_vote = df[['UserID','Rating']].groupby('UserID').mean()
 list_of_UserID = mean_vote.index.values
 print('[done]')
 
-print('Allocating matrix w...',end = ' ')
+print('Allocating matrix w\n\t This operation might last serveral minutes...',end = ' ')
 global_w = pd.DataFrame(index = list_of_UserID, columns = list_of_UserID)
 print('[done]')
+
+
+"""
 
 def update_w_for(a,selected_movie):
     global global_w
@@ -80,14 +94,59 @@ def update_w_for(a,selected_movie):
 def predicted_vote(a,selected_movie):
     global global_w
     global mean_vote
+    result = mean_vote.loc[a,'Rating']
     update_w_for(a,selected_movie)
     votes_for_movie = data_by_MovieID.get_group(selected_movie).drop('MovieID', axis = 1).set_index('UserID')
     usersID_for_movie = votes_for_movie.index.values
+
+    #extract the column of the user a with the filter of  usersID_for_movie (indexes)
+
+
+    subset = (global_w[[a]]).loc[usersID_for_movie]
+    #print('The subset is:\n',subset)
+    sum_weights = (subset.abs().sum()).loc[a]
+    
+    sum_w_times_v = 0
+    for user in usersID_for_movie:
+        sum_w_times_v += global_w.loc[user,a] * (votes_for_movie.loc[user,'Rating'] - mean_vote.loc[user,'Rating'] )
+
+
+    """
+    subset = (global_w[[a]]).loc[usersID_for_movie].rename(columns={"Rating": "factor"})
+    print('The subset is:\n',subset)
+    sum_weights = (subset.abs().sum()).loc[a]
+    print('sum_weights:\n',sum_weights)
+    print('Testing point 1:\n', votes_for_movie.sub(mean_vote.loc[usersID_for_movie]))
+    print('Testing point 2:\n', subset.mul(votes_for_movie.sub(mean_vote.loc[usersID_for_movie])))
+    sum_w_times_v = (subset.mul((votes_for_movie.sub(mean_vote.loc[usersID_for_movie])).rename(columns={"Rating": "factor"}))).sum()
+    print('The sum_w_times_v is:\n',sum_w_times_v)
+    """
+    
+    
+    """
     sum_weights = 0
     sum_w_times_v = 0
     for user in usersID_for_movie:
         sum_weights += abs(global_w.loc[user,a])
         sum_w_times_v += global_w.loc[user,a] * (votes_for_movie.loc[user,'Rating'] - mean_vote.loc[user,'Rating'] )
-    kappa = 1/sum_weights
-    return mean_vote.loc[user,'Rating'] + kappa * sum_w_times_v
+    """
+
+    if (sum_weights != 0):
+        kappa = 1/sum_weights
+        result += kappa * sum_w_times_v
+    print('The predicted vote for user',a,'on movie',selected_movie,'is:',result)
+    return result
+
+
+
+
+
+#Working with testing_data
+
+for request in range(len(testing_data)):
+    testing_data.loc[request,'Prediction'] = predicted_vote(testing_data.loc[request,'UserID'],testing_data.loc[request,'MovieID'])
+
+
+    
+
 
